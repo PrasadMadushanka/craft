@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URLs")
+}
+
+model admin {
+  id         Int          @id @default(autoincrement())
+  name       String       @db.VarChar(100)
+  email      String       @unique(map: "email_UNIQUE") @db.VarChar(100)
+  mobile     String       @unique(map: "mobile_UNIQUE") @db.VarChar(15)
+  active     Int          @default(1) @db.TinyInt
+  created_at DateTime     @default(now()) @db.DateTime(0)
+  updated_at DateTime     @default(now()) @db.DateTime(0)
+  deleted    Int          @default(0) @db.TinyInt
+  admin_role admin_role[]
+}
+
+model admin_role {
+  id         Int      @id @default(autoincrement())
+  admin_id   Int
+  role_id    Int
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+  deleted    Int      @default(0) @db.TinyInt
+  admin      admin    @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_admin_role_admin")
+  role       role     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_admin_role_role")
+
+  @@index([admin_id], map: "fk_admin_role_admin_idx")
+  @@index([role_id], map: "fk_admin_role_role_idx")
+}
+
+model category {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(45)
+  description      String?            @db.VarChar(200)
+  image            String?            @db.VarChar(255)
+  active           Int                @default(1) @db.TinyInt
+  created_at       DateTime           @default(now()) @db.DateTime(0)
+  updated_at       DateTime           @default(now()) @db.DateTime(0)
+  deleted          Int                @default(0) @db.TinyInt
+  product_category product_category[]
+  shop_category    shop_category[]
+}
+
+model customer {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar(100)
+  email             String              @unique(map: "email_UNIQUE") @db.VarChar(100)
+  mobile            String              @unique(map: "mobile_UNIQUE") @db.VarChar(15)
+  fcm_token         String?             @db.VarChar(255)
+  image             String?             @db.VarChar(255)
+  active            Int                 @default(1) @db.TinyInt
+  created_at        DateTime            @default(now()) @db.DateTime(0)
+  updated_at        DateTime            @default(now()) @db.DateTime(0)
+  deleted           Int                 @default(0) @db.TinyInt
+  customer_wallet   customer_wallet[]
+  order             order[]
+  shop_feedback     shop_feedback[]
+  shop_subscription shop_subscription[]
+}
+
+model customer_wallet {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  order_id    Int
+  amount      Float?   @db.Float
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @db.DateTime(0)
+  customer    customer @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_wallet_customer")
+
+  @@index([customer_id], map: "fk_customer_wallet_customer_idx")
+}
+
+model order {
+  id                   Int                  @id @default(autoincrement())
+  customer_id          Int
+  shop_id              Int
+  delivery_code        String?              @db.VarChar(255)
+  promotion_id         Int?
+  total_price          Decimal              @default(0.00) @db.Decimal(10, 2)
+  delivery_fee         Decimal?             @default(0.00) @db.Decimal(10, 2)
+  accept_status        order_accept_status  @default(PENDING)
+  status               order_status         @default(PLACED)
+  payment_method       order_payment_method
+  address              String               @db.Text
+  driver_note          String?              @db.Text
+  delivery_instruction String?              @db.Text
+  longitude            Decimal?             @db.Decimal(11, 8)
+  latitude             Decimal?             @db.Decimal(11, 8)
+  delivery_time        String?              @db.VarChar(45)
+  created_at           DateTime             @default(now()) @db.DateTime(0)
+  updated_at           DateTime             @default(now()) @db.DateTime(0)
+  deleted              Int                  @default(0) @db.TinyInt
+  customer             customer             @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_customer")
+  shop                 shop                 @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_shop")
+  order_product        order_product[]
+
+  @@index([shop_id], map: "fk_order_shop_idx")
+  @@index([customer_id], map: "kf_order_customer_idx")
+}
+
+model order_product {
+  id              Int             @id @default(autoincrement())
+  order_id        Int
+  product_id      Int
+  quantity        Int
+  price           Decimal         @db.Decimal(10, 2)
+  created_at      DateTime        @default(now()) @db.DateTime(0)
+  updated_at      DateTime        @default(now()) @db.DateTime(0)
+  deleted         Int             @default(0) @db.TinyInt
+  order           order           @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_product_order_id")
+  product_variant product_variant @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_product_product_id")
+
+  @@index([order_id], map: "fk_order_product_order_id_idx")
+  @@index([product_id], map: "fk_order_product_product_id_idx")
+}
+
+model otp {
+  id         Int      @id @default(autoincrement())
+  mobile     String?  @db.VarChar(45)
+  email      String   @db.VarChar(255)
+  otp        String   @db.VarChar(6)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  expire_at  DateTime @default(now()) @db.DateTime(0)
+}
+
+model privilege {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(45)
+  description    String?          @db.VarChar(255)
+  active         Int              @default(1) @db.TinyInt
+  created_at     DateTime         @default(now()) @db.DateTime(0)
+  updated_at     DateTime         @default(now()) @db.DateTime(0)
+  deleted        Int              @default(0) @db.TinyInt
+  role_privilege role_privilege[]
+}
+
+model product {
+  id                Int                 @id @default(autoincrement())
+  shop_id           Int
+  category_id       Int
+  name              String              @db.VarChar(100)
+  description       String?             @db.Text
+  image             String?             @db.VarChar(255)
+  active            Int                 @default(1) @db.TinyInt
+  created_at        DateTime            @default(now()) @db.DateTime(0)
+  updated_at        DateTime            @default(now()) @db.DateTime(0)
+  deleted           Int                 @default(0) @db.TinyInt
+  shop              shop                @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_shop")
+  product_category  product_category[]
+  product_promotion product_promotion[]
+  product_variant   product_variant[]
+
+  @@index([shop_id], map: "fk_product_shop_idx")
+}
+
+model product_category {
+  id          Int      @id @default(autoincrement())
+  product_id  Int
+  category_id Int
+  category    category @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_category_category")
+  product     product  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_category_product")
+
+  @@index([category_id], map: "fk_product_category_category_idx")
+  @@index([product_id], map: "fk_product_category_product_idx")
+}
+
+model product_image {
+  id                 Int             @id @default(autoincrement())
+  product_variant_id Int
+  image              String          @db.VarChar(255)
+  active             Int             @default(1) @db.TinyInt
+  created_at         DateTime        @default(now()) @db.DateTime(0)
+  updated_at         DateTime        @default(now()) @db.DateTime(0)
+  deleted            Int             @default(0) @db.TinyInt
+  product_variant    product_variant @relation(fields: [product_variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_image_product_variant")
+
+  @@index([product_variant_id], map: "fk_product_image_product_variant_idx")
+}
+
+model product_promotion {
+  id           Int       @id @default(autoincrement())
+  promotion_id Int
+  product_id   Int
+  active       Int       @default(1) @db.TinyInt
+  product      product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_promotion_product")
+  promotion    promotion @relation(fields: [promotion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_promotion_promotion")
+
+  @@index([product_id], map: "fk_product_promotion_product_idx")
+  @@index([promotion_id], map: "fk_product_promotion_promotion_idx")
+}
+
+model product_variant {
+  id            Int             @id @default(autoincrement())
+  product_id    Int
+  name          String          @db.VarChar(45)
+  description   String?         @db.VarChar(400)
+  stock         Int             @default(0)
+  active        Int             @default(1) @db.TinyInt
+  created_at    DateTime        @default(now()) @db.DateTime(0)
+  updated_at    DateTime        @default(now()) @db.DateTime(0)
+  deleted       Int             @default(0) @db.TinyInt
+  order_product order_product[]
+  product_image product_image[]
+  product       product         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_variant_product")
+
+  @@index([product_id], map: "fk_product_variant_product_idx")
+}
+
+model promotion {
+  id                  Int                 @id @default(autoincrement())
+  title               String              @db.VarChar(255)
+  description         String?             @db.Text
+  code                String?             @unique(map: "code_UNIQUE") @db.VarChar(45)
+  image               String?             @db.VarChar(255)
+  type                promotion_type
+  value               Decimal             @db.Decimal(10, 2)
+  min_order_amount    Decimal?            @db.Decimal(10, 2)
+  max_discount_amount Decimal?            @db.Decimal(10, 2)
+  start_date          DateTime            @db.DateTime(0)
+  end_date            DateTime            @db.DateTime(0)
+  active              Int                 @default(1) @db.TinyInt
+  created_at          DateTime            @default(now()) @db.DateTime(0)
+  updated_at          DateTime            @default(now()) @db.DateTime(0)
+  deleted             Int                 @default(0) @db.TinyInt
+  product_promotion   product_promotion[]
+}
+
+model role {
+  id             Int              @id @default(autoincrement())
+  neme           String           @db.VarChar(45)
+  description    String?          @db.VarChar(255)
+  active         Int              @default(1) @db.TinyInt
+  created_at     DateTime         @default(now()) @db.DateTime(0)
+  updated_at     DateTime         @default(now()) @db.DateTime(0)
+  deleted        Int              @default(0) @db.TinyInt
+  admin_role     admin_role[]
+  role_privilege role_privilege[]
+}
+
+model role_privilege {
+  id           Int       @id @default(autoincrement())
+  role_id      Int
+  privilege_id Int
+  privilege    privilege @relation(fields: [privilege_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_privilege_privilege")
+  role         role      @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_privilege_role")
+
+  @@index([privilege_id], map: "fk_role_privilege_privilege_idx")
+  @@index([role_id], map: "fk_role_privilege_role_idx")
+}
+
+model shop {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar(100)
+  email             String              @db.VarChar(100)
+  mobile            String              @unique(map: "mobile_UNIQUE") @db.VarChar(15)
+  description       String?             @db.VarChar(200)
+  address           String?             @db.VarChar(155)
+  opening_time      String?             @db.VarChar(45)
+  closing_time      String?             @db.VarChar(45)
+  latitude          String?             @db.VarChar(100)
+  longitude         String?             @db.VarChar(100)
+  shop_logo         String?             @db.VarChar(255)
+  banner            String?             @db.VarChar(255)
+  nic               String              @unique(map: "nic_UNIQUE") @db.VarChar(20)
+  owner_name        String?             @db.VarChar(100)
+  profile_pic       String?             @db.VarChar(255)
+  verified          String              @db.VarChar(45)
+  fcm_token         String?             @db.VarChar(255)
+  active            Int                 @default(1) @db.TinyInt
+  created_at        DateTime            @default(now()) @db.DateTime(0)
+  updated_at        DateTime            @default(now()) @db.DateTime(0)
+  deleted           Int                 @default(0) @db.TinyInt
+  recommended       Int                 @default(0) @db.TinyInt
+  order             order[]
+  product           product[]
+  shop_bank_details shop_bank_details[]
+  shop_category     shop_category[]
+  shop_feedback     shop_feedback[]
+  shop_subscription shop_subscription[]
+  shop_wallet       shop_wallet[]
+}
+
+model shop_bank_details {
+  id             Int      @id @default(autoincrement())
+  shop_id        Int
+  account_holder String   @db.VarChar(100)
+  account_number String   @db.VarChar(45)
+  bank_name      String   @db.VarChar(50)
+  branch_name    String   @db.VarChar(45)
+  active         Int?     @default(1) @db.TinyInt
+  created_at     DateTime @default(now()) @db.DateTime(0)
+  updated_at     DateTime @default(now()) @db.DateTime(0)
+  deleted        Int      @default(0) @db.TinyInt
+  shop           shop     @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_bank_details_shop")
+
+  @@index([shop_id], map: "fk_shop_bank_details_shop_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shop_feedback {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  shop_id     Int
+  order_id    Int
+  rating      Int
+  comment     String?  @db.VarChar(100)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  customer    customer @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_feedback_customer_id")
+  shop        shop     @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_feedback_shop_id")
+
+  @@index([customer_id], map: "fk_shop_feedback_customer_id_idx")
+  @@index([shop_id], map: "fk_shop_feedback_shop_id_idx")
+}
+
+model shop_subscription {
+  id          Int      @id @default(autoincrement())
+  shop_id     Int
+  customer_id Int
+  active      Int?     @default(1) @db.TinyInt
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @db.DateTime(0)
+  customer    customer @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_subscription_customer")
+  shop        shop     @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_subscription_shop")
+
+  @@index([customer_id], map: "fk_shop_subscription_customer_idx")
+  @@index([shop_id], map: "fk_shop_subscription_shop_idx")
+}
+
+model shop_wallet {
+  id         Int      @id @default(autoincrement())
+  shop_id    Int
+  order_id   Int
+  amount     Float    @db.Float
+  active     Int      @default(1) @db.TinyInt
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+  deleted    Int      @default(0) @db.TinyInt
+  shop       shop     @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_wallet_shop")
+
+  @@index([shop_id], map: "fk_shop_wallet_shop_idx")
+}
+
+model shop_category {
+  id          Int      @id @default(autoincrement())
+  shop_id     Int
+  category_id Int
+  category    category @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_category")
+  shop        shop     @relation(fields: [shop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shop_shop")
+
+  @@index([category_id], map: "fk_shop_category_idx")
+  @@index([shop_id], map: "fk_shop_shop_idx")
+}
+
+model delivery_fee {
+  id         Int      @id @default(autoincrement())
+  base_fee   Float
+  per_km     Float
+  fixed_time Int?
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+}
+
+enum promotion_type {
+  PERCENT
+  AMOUNT
+}
+
+enum order_accept_status {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum order_status {
+  PLACED
+  SHOP_ACCEPT
+  PROCESS_DONE
+  DRIVER_PICKUP
+  DELIVERED
+  RETURN
+  CANCELED
+}
+
+enum order_payment_method {
+  COD
+  CARD
+}

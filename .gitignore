@@ -1,0 +1,15 @@
+node_modules/
+coverage/
+.DS_Store
+.idea
+package-lock.json
+/prisma/.env
+/prisma/migrations/
+/prisma/dev.db
+.env
+
+*.bak
+*.tmp
+*.swp
+*.~*
+*~
